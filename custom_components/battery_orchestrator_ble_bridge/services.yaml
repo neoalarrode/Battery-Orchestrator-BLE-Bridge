@@ -1,44 +1,64 @@
 discover:
-  name: Buscar baterías EcoFlow por Bluetooth
+  name: Buscar baterías por Bluetooth
   description: >-
-    Devuelve los dispositivos EcoFlow vistos ahora mismo por Bluetooth
-    (incluye los vistos a través de un ESPHome Bluetooth Proxy), sin
-    conectar a ninguno todavía — solo lee los anuncios BLE que Home
+    Devuelve los dispositivos de la marca indicada vistos ahora mismo por
+    Bluetooth (incluye los vistos a través de un ESPHome Bluetooth Proxy),
+    sin conectar a ninguno todavía — solo lee los anuncios BLE que Home
     Assistant ya está escuchando.
+  fields:
+    brand:
+      required: false
+      example: "ecoflow"
+      default: "ecoflow"
+      selector:
+        text:
 
 get_state:
-  name: Leer estado de una batería EcoFlow
+  name: Leer estado de una batería
   description: >-
     Conecta (si hace falta) y devuelve el último estado conocido de una
-    batería EcoFlow por Bluetooth — SOC, potencia y estado de las tareas
-    de carga/descarga.
+    batería por Bluetooth — SOC, potencia y estado de las tareas de
+    carga/descarga (los campos exactos dependen de la marca).
   fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
     address:
       required: true
       example: "AA:BB:CC:DD:EE:FF"
       selector:
         text:
-    user_id:
+    credentials:
       required: true
-      description: userId numérico de la cuenta EcoFlow (no la contraseña).
+      description: >-
+        Objeto con lo que esa marca necesite para el pairing — para
+        EcoFlow: {"user_id": "..."} (el userId numérico de la cuenta, no
+        la contraseña).
       selector:
-        text:
+        object:
 
 set_charging_task:
-  name: Controlar la tarea de carga de una batería EcoFlow
+  name: Controlar la tarea de carga de una batería
   description: >-
     Activa/desactiva la tarea de carga programada y/o ajusta su límite de
     potencia desde red y su SOC objetivo. Los campos que no se indiquen no
     se tocan.
   fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
     address:
       required: true
       selector:
         text:
-    user_id:
+    credentials:
       required: true
       selector:
-        text:
+        object:
     enable:
       required: false
       selector:
@@ -59,19 +79,24 @@ set_charging_task:
           unit_of_measurement: "%"
 
 set_discharging_task:
-  name: Controlar la tarea de descarga de una batería EcoFlow
+  name: Controlar la tarea de descarga de una batería
   description: >-
     Activa/desactiva la tarea de descarga programada y/o ajusta su límite
     de potencia. Los campos que no se indiquen no se tocan.
   fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
     address:
       required: true
       selector:
         text:
-    user_id:
+    credentials:
       required: true
       selector:
-        text:
+        object:
     enable:
       required: false
       selector:
@@ -85,10 +110,19 @@ set_discharging_task:
           unit_of_measurement: W
 
 disconnect:
-  name: Desconectar una batería EcoFlow
+  name: Desconectar una batería
   description: Cierra la conexión BLE con un dispositivo, si estaba abierta.
   fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
     address:
       required: true
       selector:
         text:
+    credentials:
+      required: false
+      selector:
+        object:

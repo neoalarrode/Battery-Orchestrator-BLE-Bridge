@@ -1,0 +1,134 @@
+"""
+Adaptador de marca para EcoFlow — implementa `brands.base.BrandAdapter`
+por encima de `eflib/` (vendorizada tal cual desde rabits/ha-ef-ble,
+Apache-2.0, ver eflib/NOTICE.md). Este archivo es la UNICA parte
+especifica de EcoFlow que el puente conoce por su nombre — todo lo demas
+(`__init__.py`, los servicios de HA) solo ve la interfaz generica.
+
+`credentials` para esta marca: `{"user_id": "<userId numerico de la
+cuenta EcoFlow>"}` — nunca la contraseña, ver el propio Battery
+Orchestrator para el porque.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+
+from homeassistant.components import bluetooth
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
+
+from ...const import CONNECT_TIMEOUT_SECONDS
+from . import eflib
+
+_LOGGER = logging.getLogger(__name__)
+
+# Propiedades que se devuelven en "get_state" — nombres tal cual los
+# expone la clase Device de eflib para la familia STREAM (stream_ac.py,
+# heredada por stream_pro/stream_max/stream_ultra/stream_ac_pro). Una
+# propiedad que el dispositivo no ha reportado todavia (o que ese modelo
+# no soporta) simplemente viene a None — nunca un cero inventado.
+STREAM_STATE_FIELDS = [
+    "battery_level",
+    "battery_level_main",
+    "battery_power",
+    "grid_power",
+    "charging_task_enabled",
+    "charging_grid_power_limit",
+    "charging_grid_target_soc",
+    "discharging_task_enabled",
+    "discharging_power_limit",
+    "energy_backup_battery_level",
+]
+
+
+class EcoflowBrandAdapter:
+    def __init__(self):
+        self._devices: dict[str, eflib.DeviceBase] = {}
+
+    async def discover(self, hass: HomeAssistant) -> list[dict]:
+        found: dict[str, dict] = {}
+        for info in bluetooth.async_discovered_service_info(hass, connectable=True):
+            try:
+                device = eflib.NewDevice(info.device, info.advertisement)
+            except Exception:  # anuncio BLE que no se pudo interpretar - se ignora, no tumba el descubrimiento
+                continue
+            if device is None or eflib.is_unsupported(device):
+                continue
+            found[device.address] = {
+                "address": device.address,
+                "sn": device.serial_number,
+                "name": device.name,
+            }
+        return list(found.values())
+
+    async def ensure_connected(self, hass: HomeAssistant, address: str, credentials: dict) -> eflib.DeviceBase:
+        user_id = (credentials or {}).get("user_id")
+        device = self._devices.get(address)
+        if device is not None and device.is_connected:
+            return device
+
+        ble_dev = bluetooth.async_ble_device_from_address(hass, address, connectable=True)
+        info = bluetooth.async_last_service_info(hass, address, connectable=True)
+        if ble_dev is None or info is None:
+            raise HomeAssistantError(
+                f"No se ve {address} por Bluetooth ahora mismo — comprueba que esta "
+                "encendido y al alcance del adaptador o del ESPHome BT Proxy."
+            )
+
+        if device is None:
+            new_device = eflib.NewDevice(ble_dev, info.advertisement)
+            if new_device is None or eflib.is_unsupported(new_device):
+                raise HomeAssistantError(f"{address} no es un dispositivo EcoFlow reconocido")
+            device = new_device
+            self._devices[address] = device
+        else:
+            device.update_ble_device(ble_dev)
+
+        _LOGGER.info("Conectando por BLE a %s (%s)", device.device, address)
+        await device.connect(user_id=user_id)
+        try:
+            async with asyncio.timeout(CONNECT_TIMEOUT_SECONDS):
+                state = await device.wait_until_authenticated_or_error(raise_on_error=True)
+        except TimeoutError as e:
+            raise HomeAssistantError(
+                f"No se pudo conectar con {address} en {CONNECT_TIMEOUT_SECONDS}s"
+            ) from e
+        if not state.authenticated:
+            raise HomeAssistantError(f"No se pudo autenticar con {address} — revisa el userId")
+        return device
+
+    def get_state(self, device: eflib.DeviceBase) -> dict:
+        state = {field: getattr(device, field, None) for field in STREAM_STATE_FIELDS}
+        state["sn"] = device.serial_number
+        state["name"] = device.name
+        return state
+
+    async def set_charging_task(
+        self, device: eflib.DeviceBase, enable: bool | None, power_limit_w: float | None, target_soc: float | None,
+    ) -> bool:
+        if not hasattr(device, "enable_charging_task"):
+            return False
+        if enable is not None:
+            await device.enable_charging_task(enable)
+        if power_limit_w is not None:
+            await device.set_charging_grid_power_limit(power_limit_w)
+        if target_soc is not None:
+            await device.set_charging_grid_target_soc(target_soc)
+        return True
+
+    async def set_discharging_task(
+        self, device: eflib.DeviceBase, enable: bool | None, power_limit_w: float | None,
+    ) -> bool:
+        if not hasattr(device, "enable_discharging_task"):
+            return False
+        if enable is not None:
+            await device.enable_discharging_task(enable)
+        if power_limit_w is not None:
+            await device.set_discharging_power_limit(power_limit_w)
+        return True
+
+    async def disconnect(self, device: eflib.DeviceBase) -> None:
+        await device.disconnect()
+        self._devices = {addr: d for addr, d in self._devices.items() if d is not device}

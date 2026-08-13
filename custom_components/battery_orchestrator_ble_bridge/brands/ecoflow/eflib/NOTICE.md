@@ -9,12 +9,14 @@ directorio).
 Es la capa de protocolo BLE de bajo nivel (conexión, cifrado, *pairing*,
 framing de paquetes, y las claves de cifrado específicas por modelo de
 dispositivo) — código ya probado y en uso real, no reimplementado desde cero
-aquí. `battery_orchestrator_ecoflow_ble` construye únicamente la capa de
-servicios de arriba (fuera de este directorio); no se ha modificado ni una
-línea dentro de `eflib/`.
+aquí. El adaptador de marca `brands/ecoflow/adapter.py` (un nivel por
+encima de este directorio) es la ÚNICA parte propia de este puente que
+habla con `eflib/` — el resto del puente (`__init__.py`, los servicios de
+HA) es genérico y no sabe nada de EcoFlow en concreto. No se ha modificado
+ni una línea dentro de `eflib/`.
 
 Copyright de esta librería: ver cabeceras de cada archivo y `LICENSE` — no
-del autor de `battery_orchestrator_ecoflow_ble`.
+del autor de este puente.
 
 Para actualizar esta copia a una versión más reciente de `ha-ef-ble`, basta
 con sustituir este directorio entero por el `eflib/` correspondiente de esa

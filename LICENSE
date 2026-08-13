@@ -1,10 +1,10 @@
 Copyright (c) 2026 Eric Larrodé. Todos los derechos reservados.
 
 Este aviso cubre TODO el contenido de este repositorio EXCEPTO el
-directorio `custom_components/battery_orchestrator_ecoflow_ble/eflib/`,
+directorio `custom_components/battery_orchestrator_ble_bridge/brands/ecoflow/eflib/`,
 que es una copia sin modificar de la librería `eflib` del proyecto
 rabits/ha-ef-ble, publicada bajo licencia Apache License 2.0 — ver
-`custom_components/battery_orchestrator_ecoflow_ble/eflib/LICENSE` y
+`custom_components/battery_orchestrator_ble_bridge/brands/ecoflow/eflib/LICENSE` y
 `.../eflib/NOTICE.md` para el aviso de atribución completo.
 
 Para el resto del repositorio: se publica únicamente para que pueda
@@ -26,10 +26,10 @@ GitHub (@neoalarrode).
 Copyright (c) 2026 Eric Larrodé. All rights reserved.
 
 This notice covers ALL content in this repository EXCEPT the
-`custom_components/battery_orchestrator_ecoflow_ble/eflib/` directory,
+`custom_components/battery_orchestrator_ble_bridge/brands/ecoflow/eflib/` directory,
 which is an unmodified copy of the `eflib` library from the
 rabits/ha-ef-ble project, published under the Apache License 2.0 — see
-`custom_components/battery_orchestrator_ecoflow_ble/eflib/LICENSE` and
+`custom_components/battery_orchestrator_ble_bridge/brands/ecoflow/eflib/LICENSE` and
 `.../eflib/NOTICE.md` for the full attribution notice.
 
 For the rest of the repository: it is published solely so that it can be
