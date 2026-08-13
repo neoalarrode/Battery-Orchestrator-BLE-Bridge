@@ -39,6 +39,14 @@ STREAM_STATE_FIELDS = [
     "charging_grid_target_soc",
     "discharging_task_enabled",
     "discharging_power_limit",
+    # Especificaciones de ESTA bateria (no cambian de un ciclo a otro,
+    # pero se leen igual que el resto del estado) -- para que Battery
+    # Orchestrator pueda ofrecer autorrellenar capacidad y limites de
+    # potencia al dar de alta la bateria, en vez de que el usuario tenga
+    # que teclearlos a mano.
+    "battery_full_energy_wh",
+    "max_ac_in_power",
+    "max_ac_out_power",
     "energy_backup_battery_level",
 ]
 

@@ -143,6 +143,12 @@ class Device(DeviceBase, ProtobufProps):
 
     battery_level = pb_field(pb.cms_batt_soc)
     battery_level_main = pb_field(pb.bms_batt_soc)
+    # Capacidad total real (Wh) que reporta la propia bateria -- no
+    # estaba expuesta como propiedad todavia, añadida para que Battery
+    # Orchestrator pueda auto-rellenar la capacidad declarada de una
+    # bateria EcoFlow en vez de que el usuario tenga que mirarla en la
+    # etiqueta/app oficial y escribirla a mano.
+    battery_full_energy_wh = pb_field(pb.cms_batt_full_energy)
     cell_temperature = pb_field(pb.bms_max_cell_temp)
 
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)

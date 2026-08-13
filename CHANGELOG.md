@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.3
+`get_state` expone también `battery_full_energy_wh` (capacidad total real, ya en Wh — `cms_batt_full_energy`, no estaba mapeado hasta ahora) y ya venían presentes `max_ac_in_power`/`max_ac_out_power` (límites de potencia de carga/descarga) — para que Battery Orchestrator pueda autorrellenar capacidad y límites al dar de alta una batería en vez de teclearlos a mano.
+
 ## 0.2.2
 `get_state` ahora también incluye `pv_channels`: los puertos MPPT de la batería UNO POR UNO (`{"1": {"supported": true, "power_w": 320.0}, "2": {"supported": false, "power_w": null}, ...}`), no solo el total agregado (`pv_power`) — para poder vincular por separado paneles de zonas/orientaciones distintas conectados al mismo equipo, cada uno con su propia previsión en Battery Orchestrator.
 
