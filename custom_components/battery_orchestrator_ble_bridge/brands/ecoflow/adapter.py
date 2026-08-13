@@ -101,9 +101,32 @@ class EcoflowBrandAdapter:
 
     def get_state(self, device: eflib.DeviceBase) -> dict:
         state = {field: getattr(device, field, None) for field in STREAM_STATE_FIELDS}
+        state["pv_power"] = self._pv_power(device)
         state["sn"] = device.serial_number
         state["name"] = device.name
         return state
+
+    @staticmethod
+    def _pv_power(device: eflib.DeviceBase) -> float | None:
+        """
+        Potencia solar que ESTA bateria recibe por sus propios puertos
+        MPPT (paneles cableados directo a la bateria, no por AC) -- los
+        STREAM traen entre 0 y 4 canales segun el modelo, con nombres que
+        cambian de una clase a otra en eflib (`pv_power_1`..`pv_power_4`,
+        o ya sumado en `pv_power_sum` en los modelos que lo dan asi). Se
+        usa `pv_power_sum` si el modelo lo trae (mas fiable, lo suma el
+        propio dispositivo); si no, se suman a mano los canales que ese
+        modelo SI tenga (los que no aplican ni siquiera existen como
+        atributo en esa clase). `None` si el modelo no tiene ningun
+        puerto MPPT -- nunca un cero inventado para uno que si tiene pero
+        aun no ha reportado nada.
+        """
+        if hasattr(device, "pv_power_sum"):
+            val = getattr(device, "pv_power_sum")
+            return float(val) if val is not None else None
+        channels = [getattr(device, f"pv_power_{i}", None) for i in (1, 2, 3, 4)]
+        known = [c for c in channels if c is not None]
+        return float(sum(known)) if known else None
 
     async def set_charging_task(
         self, device: eflib.DeviceBase, enable: bool | None, power_limit_w: float | None, target_soc: float | None,

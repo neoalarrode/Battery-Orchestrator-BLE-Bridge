@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1
+`get_state` ahora incluye `pv_power`: la potencia solar que la propia batería recibe por sus puertos MPPT integrados (paneles cableados directo a la batería, sin pasar por AC) — muchos STREAM (Max, Ultra, Pro, AC Pro, Microinverter...) los tienen, con nombres de campo distintos según el modelo en `eflib`; se resuelve solo con lo que ese modelo concreto reporte, `None` si no tiene ningún puerto MPPT.
+
 ## 0.2.0 — sin verificar
 Reestructuración pedida para que el puente sea genérico de verdad, no solo por dentro: dominio renombrado de `battery_orchestrator_ecoflow_ble` a **`battery_orchestrator_ble_bridge`**, y los 5 servicios ahora llevan un campo `brand` (por ahora solo `"ecoflow"`) y un objeto `credentials` de forma libre en vez de un `user_id` fijo pensado solo para EcoFlow.
 - Nueva carpeta `brands/` con una interfaz común (`brands/base.py`) y un adaptador por marca — `brands/ecoflow/adapter.py` es hoy la ÚNICA pieza que sabe de EcoFlow por su nombre, con `eflib/` (Apache-2.0, sin modificar) vendorizada justo al lado.
