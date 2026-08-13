@@ -1,0 +1,94 @@
+discover:
+  name: Buscar baterías EcoFlow por Bluetooth
+  description: >-
+    Devuelve los dispositivos EcoFlow vistos ahora mismo por Bluetooth
+    (incluye los vistos a través de un ESPHome Bluetooth Proxy), sin
+    conectar a ninguno todavía — solo lee los anuncios BLE que Home
+    Assistant ya está escuchando.
+
+get_state:
+  name: Leer estado de una batería EcoFlow
+  description: >-
+    Conecta (si hace falta) y devuelve el último estado conocido de una
+    batería EcoFlow por Bluetooth — SOC, potencia y estado de las tareas
+    de carga/descarga.
+  fields:
+    address:
+      required: true
+      example: "AA:BB:CC:DD:EE:FF"
+      selector:
+        text:
+    user_id:
+      required: true
+      description: userId numérico de la cuenta EcoFlow (no la contraseña).
+      selector:
+        text:
+
+set_charging_task:
+  name: Controlar la tarea de carga de una batería EcoFlow
+  description: >-
+    Activa/desactiva la tarea de carga programada y/o ajusta su límite de
+    potencia desde red y su SOC objetivo. Los campos que no se indiquen no
+    se tocan.
+  fields:
+    address:
+      required: true
+      selector:
+        text:
+    user_id:
+      required: true
+      selector:
+        text:
+    enable:
+      required: false
+      selector:
+        boolean:
+    power_limit_w:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 10000
+          unit_of_measurement: W
+    target_soc:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+
+set_discharging_task:
+  name: Controlar la tarea de descarga de una batería EcoFlow
+  description: >-
+    Activa/desactiva la tarea de descarga programada y/o ajusta su límite
+    de potencia. Los campos que no se indiquen no se tocan.
+  fields:
+    address:
+      required: true
+      selector:
+        text:
+    user_id:
+      required: true
+      selector:
+        text:
+    enable:
+      required: false
+      selector:
+        boolean:
+    power_limit_w:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 10000
+          unit_of_measurement: W
+
+disconnect:
+  name: Desconectar una batería EcoFlow
+  description: Cierra la conexión BLE con un dispositivo, si estaba abierta.
+  fields:
+    address:
+      required: true
+      selector:
+        text:

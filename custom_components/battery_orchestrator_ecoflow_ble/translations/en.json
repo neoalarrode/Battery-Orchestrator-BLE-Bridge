@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Battery Orchestrator — EcoFlow BLE Bridge",
+        "description": "Nothing to configure here — everything is managed from Battery Orchestrator itself. This screen only enables the integration so it can register its services."
+      }
+    },
+    "abort": {
+      "already_configured": "An instance of this bridge is already configured."
+    }
+  }
+}

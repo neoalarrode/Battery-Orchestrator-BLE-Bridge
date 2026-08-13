@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Battery Orchestrator — Puente BLE EcoFlow",
+        "description": "No hace falta configurar nada aquí — todo se gestiona desde el propio Battery Orchestrator. Esta pantalla solo activa la integración para que pueda registrar sus servicios."
+      }
+    },
+    "abort": {
+      "already_configured": "Ya hay una instancia de este puente configurada."
+    }
+  }
+}
