@@ -101,25 +101,46 @@ class EcoflowBrandAdapter:
 
     def get_state(self, device: eflib.DeviceBase) -> dict:
         state = {field: getattr(device, field, None) for field in STREAM_STATE_FIELDS}
-        state["pv_power"] = self._pv_power(device)
+        state["pv_power"] = self._pv_power_total(device)
+        state["pv_channels"] = self._pv_channels(device)
         state["sn"] = device.serial_number
         state["name"] = device.name
         return state
 
     @staticmethod
-    def _pv_power(device: eflib.DeviceBase) -> float | None:
+    def _pv_channels(device: eflib.DeviceBase) -> dict[str, dict]:
         """
-        Potencia solar que ESTA bateria recibe por sus propios puertos
-        MPPT (paneles cableados directo a la bateria, no por AC) -- los
-        STREAM traen entre 0 y 4 canales segun el modelo, con nombres que
-        cambian de una clase a otra en eflib (`pv_power_1`..`pv_power_4`,
-        o ya sumado en `pv_power_sum` en los modelos que lo dan asi). Se
-        usa `pv_power_sum` si el modelo lo trae (mas fiable, lo suma el
-        propio dispositivo); si no, se suman a mano los canales que ese
-        modelo SI tenga (los que no aplican ni siquiera existen como
-        atributo en esa clase). `None` si el modelo no tiene ningun
-        puerto MPPT -- nunca un cero inventado para uno que si tiene pero
-        aun no ha reportado nada.
+        Puertos MPPT de ESTA bateria, uno por uno -- los STREAM traen
+        entre 0 y 4 segun el modelo (`pv_power_1`..`pv_power_4` en
+        eflib), y en una misma bateria pueden ir conectados paneles de
+        zonas/orientaciones distintas, cada uno con su propia previsión.
+        `supported` distingue "este modelo no tiene este puerto" (no
+        aparece ni como atributo en su clase) de "lo tiene pero todavia
+        no ha reportado nada" (`power_w: None` con `supported: true`) --
+        para que el menu de alta en Configuración → Solar solo ofrezca
+        puertos que existen de verdad en ESTE modelo concreto.
+        """
+        channels = {}
+        for i in (1, 2, 3, 4):
+            attr = f"pv_power_{i}"
+            supported = hasattr(device, attr)
+            val = getattr(device, attr, None) if supported else None
+            channels[str(i)] = {
+                "supported": supported,
+                "power_w": float(val) if val is not None else None,
+            }
+        return channels
+
+    @classmethod
+    def _pv_power_total(cls, device: eflib.DeviceBase) -> float | None:
+        """
+        Suma de TODOS los puertos MPPT de esta bateria -- comoda para
+        quien solo quiera un numero agregado (ver `pv_power`); para
+        vincular paneles de zonas distintas por separado se usa
+        `pv_channels` en su lugar. Usa `pv_power_sum` si el modelo lo
+        trae (mas fiable, lo suma el propio dispositivo); si no, suma a
+        mano los canales que ese modelo SI tenga. `None` si el modelo no
+        tiene ningun puerto MPPT -- nunca un cero inventado.
         """
         if hasattr(device, "pv_power_sum"):
             val = getattr(device, "pv_power_sum")

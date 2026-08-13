@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.2
+`get_state` ahora también incluye `pv_channels`: los puertos MPPT de la batería UNO POR UNO (`{"1": {"supported": true, "power_w": 320.0}, "2": {"supported": false, "power_w": null}, ...}`), no solo el total agregado (`pv_power`) — para poder vincular por separado paneles de zonas/orientaciones distintas conectados al mismo equipo, cada uno con su propia previsión en Battery Orchestrator.
+
 ## 0.2.1
 `get_state` ahora incluye `pv_power`: la potencia solar que la propia batería recibe por sus puertos MPPT integrados (paneles cableados directo a la batería, sin pasar por AC) — muchos STREAM (Max, Ultra, Pro, AC Pro, Microinverter...) los tienen, con nombres de campo distintos según el modelo en `eflib`; se resuelve solo con lo que ese modelo concreto reporte, `None` si no tiene ningún puerto MPPT.
 
