@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.4
+**Bug real, confirmado en producción**: si una petición a `get_state`/`set_*` se cortaba a media conexión (p. ej. porque quien la llama — Battery Orchestrator, en su propio contenedor — se reiniciaba mientras esperaba), el objeto `Connection` interno de ese dispositivo se quedaba a medio negociar para siempre. Como `self._devices` vive dentro del propio adaptador (un singleton que sobrevive mientras HA Core siga arriba, ajeno a que el llamante se reinicie), el SIGUIENTE intento reutilizaba ese mismo objeto roto — `connect()` (ver `devicebase.py`) solo crea una `Connection` nueva si no había ninguna, nunca si había una a medias. Resultado real, visto en logs: "No se pudo conectar con `<address>` en 25s" en TODOS los intentos siguientes, resuelto solo reiniciando la máquina entera (que sí reinicia HA Core y limpia el singleton) — un reinicio del addon que llama no arreglaba nada, porque el problema vivía aquí, no ahí.
+
+Arreglado en `ensure_connected` (`brands/ecoflow/adapter.py`): si el dispositivo no está conectado pero SÍ quedó un intento a medias (`connection_state is not None`), se fuerza un `disconnect()` limpio antes de reconectar — así el siguiente `connect()` siempre parte de una `Connection` fresca, nunca de una reutilizada a medio romper.
+
 ## 0.2.3
 `get_state` expone también `battery_full_energy_wh` (capacidad total real, ya en Wh — `cms_batt_full_energy`, no estaba mapeado hasta ahora) y ya venían presentes `max_ac_in_power`/`max_ac_out_power` (límites de potencia de carga/descarga) — para que Battery Orchestrator pueda autorrellenar capacidad y límites al dar de alta una batería en vez de teclearlos a mano.
 

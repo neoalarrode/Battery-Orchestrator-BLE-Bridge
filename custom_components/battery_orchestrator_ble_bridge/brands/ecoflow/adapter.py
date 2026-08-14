@@ -92,6 +92,38 @@ class EcoflowBrandAdapter:
             device = new_device
             self._devices[address] = device
         else:
+            # BUG REAL, CONFIRMADO EN PRODUCCION: `device` sobrevive en
+            # `self._devices` mientras HA Core siga vivo (este adaptador
+            # es un singleton de la propia integracion) -- un reinicio del
+            # ADDON que llama a este servicio (Battery Orchestrator) NO
+            # reinicia HA Core, asi que si esa peticion se corto a medias
+            # (el addon murio mientras `device.connect()` seguia
+            # esperando), el objeto `Connection` interno de `device` se
+            # queda a medio negociar para siempre — `connect()` (ver
+            # devicebase.py) solo crea una `Connection` nueva si
+            # `self._conn is None`, asi que el SIGUIENTE intento reutiliza
+            # ese mismo objeto roto y se cuelga otra vez, indefinidamente,
+            # hasta reiniciar la maquina entera (que si reinicia HA Core y
+            # limpia el singleton). Sintoma real: "No se pudo conectar con
+            # <address> en 25s" en CADA intento tras un reinicio del addon,
+            # resuelto solo con un reinicio completo del host.
+            #
+            # Arreglo: si no esta conectado de verdad pero SI quedo un
+            # intento de conexion a medias (`connection_state is not
+            # None`), forzar un disconnect limpio primero -- eso pone
+            # `self._conn = None` (ver disconnect() en devicebase.py), asi
+            # que el siguiente connect() de mas abajo crea una Connection
+            # fresca en vez de reutilizar la rota.
+            if device.connection_state is not None and not device.is_connected:
+                _LOGGER.warning(
+                    "%s tenia una conexion a medias de un intento anterior — forzando "
+                    "desconexion antes de reconectar, en vez de reutilizarla",
+                    address,
+                )
+                try:
+                    await device.disconnect()
+                except Exception:
+                    _LOGGER.debug("Fallo desconectando %s antes de reconectar (se ignora, se reconecta igual)", address, exc_info=True)
             device.update_ble_device(ble_dev)
 
         _LOGGER.info("Conectando por BLE a %s (%s)", device.device, address)
