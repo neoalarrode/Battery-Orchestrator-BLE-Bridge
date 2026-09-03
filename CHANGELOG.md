@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.0
+Cuatro servicios nuevos, mismo patrón que `set_charging_task`/`set_discharging_task`: `set_backup_reserve` (reserva de emergencia), `set_feed_grid` (vertido a red on/off), `set_outlet` (salidas AC 1/2 del STREAM AC Pro) y `set_grid_import_limit` (límite de potencia de importación de red). Los métodos `eflib` ya estaban vendorizados (`set_energy_backup_battery_level`, `enable_feed_grid`, `enable_ac_1`/`enable_ac_2`, `set_grid_in_pow_limit`) — solo faltaba exponerlos como servicio, igual que el resto. `set_outlet` devuelve `ok: False` si el modelo conectado no tiene esa salida (solo el STREAM AC Pro tiene dos AC independientes).
+
 ## 0.2.4
 **Bug real, confirmado en producción**: si una petición a `get_state`/`set_*` se cortaba a media conexión (p. ej. porque quien la llama — Battery Orchestrator, en su propio contenedor — se reiniciaba mientras esperaba), el objeto `Connection` interno de ese dispositivo se quedaba a medio negociar para siempre. Como `self._devices` vive dentro del propio adaptador (un singleton que sobrevive mientras HA Core siga arriba, ajeno a que el llamante se reinicie), el SIGUIENTE intento reutilizaba ese mismo objeto roto — `connect()` (ver `devicebase.py`) solo crea una `Connection` nueva si no había ninguna, nunca si había una a medias. Resultado real, visto en logs: "No se pudo conectar con `<address>` en 25s" en TODOS los intentos siguientes, resuelto solo reiniciando la máquina entera (que sí reinicia HA Core y limpia el singleton) — un reinicio del addon que llama no arreglaba nada, porque el problema vivía aquí, no ahí.
 

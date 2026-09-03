@@ -32,16 +32,23 @@ from .const import (
     ATTR_BRAND,
     ATTR_CREDENTIALS,
     ATTR_ENABLE,
+    ATTR_OUTLET,
+    ATTR_PCT,
     ATTR_POWER_LIMIT_W,
     ATTR_TARGET_SOC,
+    ATTR_WATTS,
     DEFAULT_BRAND,
     DOMAIN,
     FIRST_DATA_TIMEOUT_SECONDS,
     SERVICE_DISCONNECT,
     SERVICE_DISCOVER,
     SERVICE_GET_STATE,
+    SERVICE_SET_BACKUP_RESERVE,
     SERVICE_SET_CHARGING_TASK,
     SERVICE_SET_DISCHARGING_TASK,
+    SERVICE_SET_FEED_GRID,
+    SERVICE_SET_GRID_IMPORT_LIMIT,
+    SERVICE_SET_OUTLET,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -64,6 +71,14 @@ SET_DISCHARGING_TASK_SCHEMA = vol.Schema({
     vol.Optional(ATTR_ENABLE): cv.boolean,
     vol.Optional(ATTR_POWER_LIMIT_W): vol.Coerce(float),
 })
+SET_BACKUP_RESERVE_SCHEMA = vol.Schema({**_AUTH_SCHEMA, vol.Required(ATTR_PCT): vol.Coerce(float)})
+SET_FEED_GRID_SCHEMA = vol.Schema({**_AUTH_SCHEMA, vol.Required(ATTR_ENABLE): cv.boolean})
+SET_OUTLET_SCHEMA = vol.Schema({
+    **_AUTH_SCHEMA,
+    vol.Required(ATTR_OUTLET): vol.In([1, 2]),
+    vol.Required(ATTR_ENABLE): cv.boolean,
+})
+SET_GRID_IMPORT_LIMIT_SCHEMA = vol.Schema({**_AUTH_SCHEMA, vol.Required(ATTR_WATTS): vol.Coerce(float)})
 
 
 def _get_adapter(brand: str):
@@ -136,6 +151,70 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.exception("Fallo al mandar comando de descarga a %s", address)
             return {"ok": False, "error": str(e)}
 
+    async def handle_set_backup_reserve(call: ServiceCall) -> ServiceResponse:
+        adapter = _get_adapter(call.data.get(ATTR_BRAND, DEFAULT_BRAND))
+        address = call.data[ATTR_ADDRESS]
+        credentials = call.data[ATTR_CREDENTIALS]
+        try:
+            device = await adapter.ensure_connected(hass, address, credentials)
+            ok = await adapter.set_backup_reserve(device, call.data[ATTR_PCT])
+            if not ok:
+                return {"ok": False, "error": "Esta marca/modelo no soporta reserva de emergencia"}
+            return {"ok": True}
+        except HomeAssistantError as e:
+            return {"ok": False, "error": str(e)}
+        except Exception as e:
+            _LOGGER.exception("Fallo al mandar reserva de emergencia a %s", address)
+            return {"ok": False, "error": str(e)}
+
+    async def handle_set_feed_grid(call: ServiceCall) -> ServiceResponse:
+        adapter = _get_adapter(call.data.get(ATTR_BRAND, DEFAULT_BRAND))
+        address = call.data[ATTR_ADDRESS]
+        credentials = call.data[ATTR_CREDENTIALS]
+        try:
+            device = await adapter.ensure_connected(hass, address, credentials)
+            ok = await adapter.set_feed_grid(device, call.data[ATTR_ENABLE])
+            if not ok:
+                return {"ok": False, "error": "Esta marca/modelo no soporta vertido a red"}
+            return {"ok": True}
+        except HomeAssistantError as e:
+            return {"ok": False, "error": str(e)}
+        except Exception as e:
+            _LOGGER.exception("Fallo al mandar vertido a red a %s", address)
+            return {"ok": False, "error": str(e)}
+
+    async def handle_set_outlet(call: ServiceCall) -> ServiceResponse:
+        adapter = _get_adapter(call.data.get(ATTR_BRAND, DEFAULT_BRAND))
+        address = call.data[ATTR_ADDRESS]
+        credentials = call.data[ATTR_CREDENTIALS]
+        try:
+            device = await adapter.ensure_connected(hass, address, credentials)
+            ok = await adapter.set_outlet(device, call.data[ATTR_OUTLET], call.data[ATTR_ENABLE])
+            if not ok:
+                return {"ok": False, "error": "Esta marca/modelo no soporta esta salida AC"}
+            return {"ok": True}
+        except HomeAssistantError as e:
+            return {"ok": False, "error": str(e)}
+        except Exception as e:
+            _LOGGER.exception("Fallo al mandar salida AC a %s", address)
+            return {"ok": False, "error": str(e)}
+
+    async def handle_set_grid_import_limit(call: ServiceCall) -> ServiceResponse:
+        adapter = _get_adapter(call.data.get(ATTR_BRAND, DEFAULT_BRAND))
+        address = call.data[ATTR_ADDRESS]
+        credentials = call.data[ATTR_CREDENTIALS]
+        try:
+            device = await adapter.ensure_connected(hass, address, credentials)
+            ok = await adapter.set_grid_import_limit(device, call.data[ATTR_WATTS])
+            if not ok:
+                return {"ok": False, "error": "Esta marca/modelo no soporta limite de importacion de red"}
+            return {"ok": True}
+        except HomeAssistantError as e:
+            return {"ok": False, "error": str(e)}
+        except Exception as e:
+            _LOGGER.exception("Fallo al mandar limite de importacion de red a %s", address)
+            return {"ok": False, "error": str(e)}
+
     async def handle_disconnect(call: ServiceCall) -> ServiceResponse:
         adapter = _get_adapter(call.data.get(ATTR_BRAND, DEFAULT_BRAND))
         # No hay forma generica de "esta ya conectado" sin conectar, asi
@@ -153,6 +232,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_GET_STATE, handle_get_state, schema=GET_STATE_SCHEMA, supports_response=SupportsResponse.ONLY)
     hass.services.async_register(DOMAIN, SERVICE_SET_CHARGING_TASK, handle_set_charging_task, schema=SET_CHARGING_TASK_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, SERVICE_SET_DISCHARGING_TASK, handle_set_discharging_task, schema=SET_DISCHARGING_TASK_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, SERVICE_SET_BACKUP_RESERVE, handle_set_backup_reserve, schema=SET_BACKUP_RESERVE_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, SERVICE_SET_FEED_GRID, handle_set_feed_grid, schema=SET_FEED_GRID_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, SERVICE_SET_OUTLET, handle_set_outlet, schema=SET_OUTLET_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, SERVICE_SET_GRID_IMPORT_LIMIT, handle_set_grid_import_limit, schema=SET_GRID_IMPORT_LIMIT_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, SERVICE_DISCONNECT, handle_disconnect, schema=DISCONNECT_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
 
     return True
@@ -161,7 +244,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     for service in (
         SERVICE_DISCOVER, SERVICE_GET_STATE, SERVICE_SET_CHARGING_TASK,
-        SERVICE_SET_DISCHARGING_TASK, SERVICE_DISCONNECT,
+        SERVICE_SET_DISCHARGING_TASK, SERVICE_SET_BACKUP_RESERVE,
+        SERVICE_SET_FEED_GRID, SERVICE_SET_OUTLET, SERVICE_SET_GRID_IMPORT_LIMIT,
+        SERVICE_DISCONNECT,
     ):
         hass.services.async_remove(DOMAIN, service)
     return True

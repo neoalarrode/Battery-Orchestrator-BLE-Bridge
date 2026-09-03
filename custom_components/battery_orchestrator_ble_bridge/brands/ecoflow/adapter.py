@@ -213,6 +213,33 @@ class EcoflowBrandAdapter:
             await device.set_discharging_power_limit(power_limit_w)
         return True
 
+    async def set_backup_reserve(self, device: eflib.DeviceBase, pct: float) -> bool:
+        if not hasattr(device, "set_energy_backup_battery_level"):
+            return False
+        await device.set_energy_backup_battery_level(pct)
+        return True
+
+    async def set_feed_grid(self, device: eflib.DeviceBase, enable: bool) -> bool:
+        if not hasattr(device, "enable_feed_grid"):
+            return False
+        await device.enable_feed_grid(enable)
+        return True
+
+    async def set_outlet(self, device: eflib.DeviceBase, outlet: int, enable: bool) -> bool:
+        # Solo el STREAM AC Pro tiene dos salidas AC independientes -- el
+        # resto de modelos no expone `enable_ac_1`/`enable_ac_2` en absoluto.
+        method_name = f"enable_ac_{outlet}"
+        if not hasattr(device, method_name):
+            return False
+        await getattr(device, method_name)(enable)
+        return True
+
+    async def set_grid_import_limit(self, device: eflib.DeviceBase, watts: float) -> bool:
+        if not hasattr(device, "set_grid_in_pow_limit"):
+            return False
+        await device.set_grid_in_pow_limit(watts)
+        return True
+
     async def disconnect(self, device: eflib.DeviceBase) -> None:
         await device.disconnect()
         self._devices = {addr: d for addr, d in self._devices.items() if d is not device}
