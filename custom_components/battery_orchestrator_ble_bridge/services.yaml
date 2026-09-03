@@ -109,6 +109,113 @@ set_discharging_task:
           max: 10000
           unit_of_measurement: W
 
+set_backup_reserve:
+  name: Reserva de emergencia
+  description: >-
+    Ajusta el porcentaje de SOC que la batería se guarda como colchón ante
+    un corte de red.
+  fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
+    address:
+      required: true
+      selector:
+        text:
+    credentials:
+      required: true
+      selector:
+        object:
+    pct:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+
+set_feed_grid:
+  name: Vertido a red
+  description: Activa o desactiva el vertido de excedente a la red eléctrica.
+  fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
+    address:
+      required: true
+      selector:
+        text:
+    credentials:
+      required: true
+      selector:
+        object:
+    enable:
+      required: true
+      selector:
+        boolean:
+
+set_outlet:
+  name: Salida AC
+  description: >-
+    Activa o desactiva una de las salidas AC independientes del equipo
+    (solo modelos con más de una, p. ej. STREAM AC Pro).
+  fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
+    address:
+      required: true
+      selector:
+        text:
+    credentials:
+      required: true
+      selector:
+        object:
+    outlet:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 2
+          step: 1
+    enable:
+      required: true
+      selector:
+        boolean:
+
+set_grid_import_limit:
+  name: Límite de importación de red
+  description: >-
+    Ajusta el límite de potencia que el equipo puede tomar de la red para
+    cargar.
+  fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
+    address:
+      required: true
+      selector:
+        text:
+    credentials:
+      required: true
+      selector:
+        object:
+    watts:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 10000
+          unit_of_measurement: W
+
 disconnect:
   name: Desconectar una batería
   description: Cierra la conexión BLE con un dispositivo, si estaba abierta.
