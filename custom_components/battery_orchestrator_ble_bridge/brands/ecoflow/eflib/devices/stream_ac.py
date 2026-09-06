@@ -143,12 +143,6 @@ class Device(DeviceBase, ProtobufProps):
 
     battery_level = pb_field(pb.cms_batt_soc)
     battery_level_main = pb_field(pb.bms_batt_soc)
-    # Capacidad total real (Wh) que reporta la propia bateria -- no
-    # estaba expuesta como propiedad todavia, añadida para que Battery
-    # Orchestrator pueda auto-rellenar la capacidad declarada de una
-    # bateria EcoFlow en vez de que el usuario tenga que mirarla en la
-    # etiqueta/app oficial y escribirla a mano.
-    battery_full_energy_wh = pb_field(pb.cms_batt_full_energy)
     cell_temperature = pb_field(pb.bms_max_cell_temp)
 
     remaining_time_charging = pb_field(pb.cms_chg_rem_time)
@@ -277,7 +271,7 @@ class Device(DeviceBase, ProtobufProps):
         message.cfg_utc_time = round(time.time())
         payload = message.SerializeToString()
         packet = Packet(0x20, 0x02, 0xFE, 0x11, payload, 0x01, 0x01, 0x13)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     @controls.battery(
         battery_charge_limit_max,
@@ -406,7 +400,8 @@ class Device(DeviceBase, ProtobufProps):
             if target is None or self._all_timer_tasks is None:
                 return False
 
-            chain.pending_mods.append((target.task_index, modify))
+            pending_mod = (target.task_index, modify)
+            chain.pending_mods.append(pending_mod)
 
             config = bk_series_pb2.ConfigWrite()
 
@@ -418,7 +413,15 @@ class Device(DeviceBase, ProtobufProps):
                     if task.task_index == mod_idx:
                         mod_fn(new_task)
 
-            await self._send_config_packet(config)
+            sent = False
+            try:
+                await self._send_config_packet(config)
+                sent = True
+            finally:
+                # If the send failed the mod never reached the device, so drop it;
+                # otherwise it would be silently re-applied on the next successful edit
+                if not sent:
+                    chain.pending_mods.remove(pending_mod)
 
             # Clear pending mods after the device has had time to process and send back
             # updated state

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+Actualizado `eflib/` (vendorizado desde `rabits/ha-ef-ble`) de la version que traiamos a v1.1.1 -- a peticion expresa del usuario, tras el ultimo release de ese proyecto. Cambio real relevante: reescritura completa del flujo de autenticacion BLE como una secuencia de estados (`_auth_stage`, listener `on_session_key_derived`) y lectura de cada respuesta de auth desde un unico buzon de notificaciones en vez de competir por "el siguiente frame que llegue" (PRs #464/#466/#489 de ha-ef-ble) -- mejoras directas de fiabilidad de la conexion, justo el area donde mas se nota en real. Tambien trae los prefijos de serie nuevos para Delta 3 1500/Classic.
+
+Verificado ANTES de sustituir: `adapter.py` (la unica parte propia que toca `eflib/`) sigue siendo 100% compatible sin cambios -- todos los metodos/propiedades que usa (`connect`, `disconnect`, `is_connected`, `connection_state`, `wait_until_authenticated_or_error`, `set_energy_backup_battery_level`, `enable_feed_grid`, `enable_ac_1`/`enable_ac_2`, `set_grid_in_pow_limit`...) siguen presentes con la misma firma. Compilado contra Python 3.14 real (el runtime de HA Core, no el 3.9 local -- el codigo nuevo usa sintaxis de generics (PEP 695) y `match` que 3.9 no entiende, dando falsos "SyntaxError" si se comprueba con el interprete equivocado). Los 36 matchers Bluetooth del `manifest.json` (deteccion de modelo por anuncio BLE) tambien se compararon 1:1 contra los de upstream -- ninguno faltaba.
+
+**No probado contra hardware real todavia** -- necesita desactivar temporalmente la integracion `ha-ef-ble` del usuario primero (BLE de EcoFlow solo admite una sesion a la vez, mismo aviso de siempre).
+
 ## 0.3.0
 Cuatro servicios nuevos, mismo patrón que `set_charging_task`/`set_discharging_task`: `set_backup_reserve` (reserva de emergencia), `set_feed_grid` (vertido a red on/off), `set_outlet` (salidas AC 1/2 del STREAM AC Pro) y `set_grid_import_limit` (límite de potencia de importación de red). Los métodos `eflib` ya estaban vendorizados (`set_energy_backup_battery_level`, `enable_feed_grid`, `enable_ac_1`/`enable_ac_2`, `set_grid_in_pow_limit`) — solo faltaba exponerlos como servicio, igual que el resto. `set_outlet` devuelve `ok: False` si el modelo conectado no tiene esa salida (solo el STREAM AC Pro tiene dos AC independientes).
 

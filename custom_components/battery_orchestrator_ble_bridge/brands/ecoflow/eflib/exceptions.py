@@ -10,6 +10,10 @@ class PacketReceiveError(Exception):
     """Error during receiving packet"""
 
 
+class NotConnectedError(Exception):
+    """Raised when a command cannot be delivered because the BLE link is unavailable"""
+
+
 class FailedToAuthenticate(Exception):
     """Failed to connect"""
 
@@ -32,7 +36,11 @@ class MaxConnectionAttemptsReached(Exception):
 class MaxReconnectAttemptsReached(Exception):
     """Device could not reconnect after maximum attempts"""
 
-    def __init__(self, last_error: Exception | type[Exception], attempts: int = 2):
+    def __init__(
+        self,
+        last_error: Exception | type[Exception] | None = None,
+        attempts: int = 2,
+    ):
         super().__init__(
             f"Could not connect to device after {attempts} unsuccessful attempts"
         )

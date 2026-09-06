@@ -235,13 +235,13 @@ class Device(DeviceBase, ProtobufProps):
             case 0x0B, 0x0C, 0x01:
                 # master_info, load_info, backup_info, watt_info, master_ver_info
                 self._logger.debug("Parsed data: %r", packet)
-                await self._conn.replyPacket(packet)
+                await self._conn.reply_packet(packet)
                 self.update_from_bytes(pd303_pb2.ProtoTime, packet.payload)
                 processed = True
 
             case 0x0B, 0x0C, 0x20:  # backup_incre_info
                 self._logger.debug("Parsed data: %r", packet)
-                await self._conn.replyPacket(packet)
+                await self._conn.reply_packet(packet)
                 self.update_from_bytes(pd303_pb2.ProtoPushAndSet, packet.payload)
                 processed = True
 
@@ -275,7 +275,7 @@ class Device(DeviceBase, ProtobufProps):
     async def _send_config_packet(self, message):
         payload = message.SerializeToString()
         packet = Packet(0x21, 0x0B, 0x0C, 0x21, payload, 0x01, 0x01, 0x13)
-        await self._conn.sendPacket(packet)
+        await self.send_packet(packet, raise_on_failure=True)
 
     async def set_config_flag(self, enable):
         """Send command to enable/disable sending config data from device to the host"""
