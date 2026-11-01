@@ -14,6 +14,11 @@ SERVICE_SET_BACKUP_RESERVE = "set_backup_reserve"
 SERVICE_SET_FEED_GRID = "set_feed_grid"
 SERVICE_SET_OUTLET = "set_outlet"
 SERVICE_SET_GRID_IMPORT_LIMIT = "set_grid_import_limit"
+# Modo "semiautomatico" de las STREAM: sin contador, la unidad entrega a la casa
+# la carga base que se le fije. Battery Orchestrator hace de contador y la
+# reescribe en cada cambio del consumo (un grupo/contador por bateria).
+SERVICE_SET_ENERGY_MONITORING_MODE = "set_energy_monitoring_mode"
+SERVICE_SET_BASE_LOAD = "set_base_load"
 
 ATTR_BRAND = "brand"
 ATTR_ADDRESS = "address"
@@ -24,6 +29,7 @@ ATTR_TARGET_SOC = "target_soc"
 ATTR_PCT = "pct"
 ATTR_OUTLET = "outlet"
 ATTR_WATTS = "watts"
+ATTR_MODE = "mode"
 
 # Marca por defecto cuando la llamada no la indica — hoy es la unica que
 # existe, pero el campo "brand" ya esta en todos los servicios desde el

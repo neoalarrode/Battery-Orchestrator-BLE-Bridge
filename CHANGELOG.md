@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+Modo semiautomatico de las STREAM, para que Battery Orchestrator haga de contador de cada bateria (un grupo por bateria, cada una con sus 1200 W):
+- Servicio `set_energy_monitoring_mode` (`smart_meter` / `semi_automated`).
+- Servicio `set_base_load`: carga base que entrega la unidad. Si el equipo no tiene franja de carga base (recien restablecido) se crea una de todo el dia, con el mismo mensaje que usa eflib.
+- `get_state` devuelve `energy_monitoring_mode`, `base_load_power`, `load_power_enabled`, `feed_grid` y `feed_grid_pow_limit`.
+
 ## 0.4.2
 
 `get_state` de la familia STREAM devuelve tambien `ac_power_1`/`ac_power_2`: la potencia que sale por los enchufes Schuko de cada unidad (ya leida por eflib, `pow_get_schuko1/2`; no se toca el codigo vendorizado). Battery Orchestrator la necesita para no contar como carga de bateria lo que la unidad toma de red para alimentar sus enchufes.

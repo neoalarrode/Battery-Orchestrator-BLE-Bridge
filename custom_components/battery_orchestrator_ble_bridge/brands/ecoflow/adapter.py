@@ -41,6 +41,13 @@ STREAM_STATE_FIELDS = [
     # resta para saber cuanto entra de verdad en la bateria.
     "ac_power_1",
     "ac_power_2",
+    # Modo de medicion (smart_meter / semi_automated) y carga base que entrega
+    # en semiautomatico -- ver set_energy_monitoring_mode/set_base_load.
+    "energy_monitoring_mode",
+    "base_load_power",
+    "load_power_enabled",
+    "feed_grid",
+    "feed_grid_pow_limit",
     "charging_task_enabled",
     "charging_grid_power_limit",
     "charging_grid_target_soc",
@@ -148,6 +155,9 @@ class EcoflowBrandAdapter:
 
     def get_state(self, device: eflib.DeviceBase) -> dict:
         state = {field: getattr(device, field, None) for field in STREAM_STATE_FIELDS}
+        mode = state.get("energy_monitoring_mode")
+        if mode is not None and hasattr(mode, "state_name"):
+            state["energy_monitoring_mode"] = mode.state_name
         state["pv_power"] = self._pv_power_total(device)
         state["pv_channels"] = self._pv_channels(device)
         state["sn"] = device.serial_number
@@ -245,6 +255,38 @@ class EcoflowBrandAdapter:
         if not hasattr(device, "set_grid_in_pow_limit"):
             return False
         await device.set_grid_in_pow_limit(watts)
+        return True
+
+    async def set_energy_monitoring_mode(self, device: eflib.DeviceBase, mode: str) -> bool:
+        """`smart_meter` (sigue al contador vinculado en la app) o
+        `semi_automated` (entrega la carga base fijada)."""
+        if not hasattr(device, "set_energy_monitoring_mode"):
+            return False
+        enum_cls = type(getattr(device, "energy_monitoring_mode", None))
+        modes = {"smart_meter": "SMART_METER", "semi_automated": "SEMI_AUTOMATED"}
+        if mode not in modes or not hasattr(enum_cls, modes[mode]):
+            return False
+        await device.set_energy_monitoring_mode(getattr(enum_cls, modes[mode]))
+        return True
+
+    async def set_base_load(self, device: eflib.DeviceBase, watts: float) -> bool:
+        """Carga base del modo semiautomatico. eflib solo la cambia si el equipo
+        ya tiene una franja de carga base (`set_load_power` conserva su horario);
+        recien restablecido no tiene ninguna, asi que se crea una de todo el dia
+        con el mismo mensaje que usa eflib."""
+        if not hasattr(device, "set_load_power"):
+            return False
+        watts = max(0, int(round(watts)))
+        if getattr(device, "load_power_enabled", False):
+            return bool(await device.set_load_power(watts))
+        from .eflib.pb import bk_series_pb2
+        await device._send_config_packet(
+            bk_series_pb2.ConfigWrite(
+                cfg_day_resident_load_list=bk_series_pb2.DayResidentLoadList(
+                    load=[bk_series_pb2.ResidentLoad(load_power=watts, start_min=0, end_min=1440)]
+                )
+            )
+        )
         return True
 
     async def disconnect(self, device: eflib.DeviceBase) -> None:

@@ -233,3 +233,57 @@ disconnect:
       required: false
       selector:
         object:
+
+set_energy_monitoring_mode:
+  name: Modo de medición
+  description: >-
+    smart_meter: el equipo sigue al contador vinculado en la app.
+    semi_automated: entrega a la casa la carga base fijada (Battery
+    Orchestrator hace de contador).
+  fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
+    address:
+      required: true
+      selector:
+        text:
+    credentials:
+      required: true
+      selector:
+        object:
+    mode:
+      required: true
+      selector:
+        select:
+          options:
+            - smart_meter
+            - semi_automated
+
+set_base_load:
+  name: Carga base
+  description: >-
+    Potencia que entrega el equipo a la casa en modo semiautomático.
+  fields:
+    brand:
+      required: false
+      default: "ecoflow"
+      selector:
+        text:
+    address:
+      required: true
+      selector:
+        text:
+    credentials:
+      required: true
+      selector:
+        object:
+    watts:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 1200
+          unit_of_measurement: W

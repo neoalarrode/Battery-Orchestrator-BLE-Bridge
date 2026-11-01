@@ -36,6 +36,7 @@ from .const import (
     ATTR_PCT,
     ATTR_POWER_LIMIT_W,
     ATTR_TARGET_SOC,
+    ATTR_MODE,
     ATTR_WATTS,
     DEFAULT_BRAND,
     DOMAIN,
@@ -47,6 +48,8 @@ from .const import (
     SERVICE_SET_CHARGING_TASK,
     SERVICE_SET_DISCHARGING_TASK,
     SERVICE_SET_FEED_GRID,
+    SERVICE_SET_BASE_LOAD,
+    SERVICE_SET_ENERGY_MONITORING_MODE,
     SERVICE_SET_GRID_IMPORT_LIMIT,
     SERVICE_SET_OUTLET,
 )
@@ -79,6 +82,8 @@ SET_OUTLET_SCHEMA = vol.Schema({
     vol.Required(ATTR_ENABLE): cv.boolean,
 })
 SET_GRID_IMPORT_LIMIT_SCHEMA = vol.Schema({**_AUTH_SCHEMA, vol.Required(ATTR_WATTS): vol.Coerce(float)})
+SET_ENERGY_MONITORING_MODE_SCHEMA = vol.Schema({**_AUTH_SCHEMA, vol.Required(ATTR_MODE): vol.In(["smart_meter", "semi_automated"])})
+SET_BASE_LOAD_SCHEMA = vol.Schema({**_AUTH_SCHEMA, vol.Required(ATTR_WATTS): vol.All(vol.Coerce(float), vol.Range(min=0))})
 
 
 def _get_adapter(brand: str):
@@ -215,6 +220,36 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.exception("Fallo al mandar limite de importacion de red a %s", address)
             return {"ok": False, "error": str(e)}
 
+    async def handle_set_energy_monitoring_mode(call: ServiceCall) -> ServiceResponse:
+        adapter = _get_adapter(call.data.get(ATTR_BRAND, DEFAULT_BRAND))
+        address = call.data[ATTR_ADDRESS]
+        try:
+            device = await adapter.ensure_connected(hass, address, call.data[ATTR_CREDENTIALS])
+            ok = await adapter.set_energy_monitoring_mode(device, call.data[ATTR_MODE])
+            if not ok:
+                return {"ok": False, "error": "Esta marca/modelo no soporta el modo de medicion"}
+            return {"ok": True}
+        except HomeAssistantError as e:
+            return {"ok": False, "error": str(e)}
+        except Exception as e:
+            _LOGGER.exception("Fallo al mandar el modo de medicion a %s", address)
+            return {"ok": False, "error": str(e)}
+
+    async def handle_set_base_load(call: ServiceCall) -> ServiceResponse:
+        adapter = _get_adapter(call.data.get(ATTR_BRAND, DEFAULT_BRAND))
+        address = call.data[ATTR_ADDRESS]
+        try:
+            device = await adapter.ensure_connected(hass, address, call.data[ATTR_CREDENTIALS])
+            ok = await adapter.set_base_load(device, call.data[ATTR_WATTS])
+            if not ok:
+                return {"ok": False, "error": "Esta marca/modelo no soporta carga base"}
+            return {"ok": True}
+        except HomeAssistantError as e:
+            return {"ok": False, "error": str(e)}
+        except Exception as e:
+            _LOGGER.exception("Fallo al mandar la carga base a %s", address)
+            return {"ok": False, "error": str(e)}
+
     async def handle_disconnect(call: ServiceCall) -> ServiceResponse:
         adapter = _get_adapter(call.data.get(ATTR_BRAND, DEFAULT_BRAND))
         # No hay forma generica de "esta ya conectado" sin conectar, asi
@@ -236,6 +271,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_SET_FEED_GRID, handle_set_feed_grid, schema=SET_FEED_GRID_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, SERVICE_SET_OUTLET, handle_set_outlet, schema=SET_OUTLET_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, SERVICE_SET_GRID_IMPORT_LIMIT, handle_set_grid_import_limit, schema=SET_GRID_IMPORT_LIMIT_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, SERVICE_SET_ENERGY_MONITORING_MODE, handle_set_energy_monitoring_mode, schema=SET_ENERGY_MONITORING_MODE_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, SERVICE_SET_BASE_LOAD, handle_set_base_load, schema=SET_BASE_LOAD_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, SERVICE_DISCONNECT, handle_disconnect, schema=DISCONNECT_SCHEMA, supports_response=SupportsResponse.OPTIONAL)
 
     return True
@@ -246,6 +283,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         SERVICE_DISCOVER, SERVICE_GET_STATE, SERVICE_SET_CHARGING_TASK,
         SERVICE_SET_DISCHARGING_TASK, SERVICE_SET_BACKUP_RESERVE,
         SERVICE_SET_FEED_GRID, SERVICE_SET_OUTLET, SERVICE_SET_GRID_IMPORT_LIMIT,
+        SERVICE_SET_ENERGY_MONITORING_MODE, SERVICE_SET_BASE_LOAD,
         SERVICE_DISCONNECT,
     ):
         hass.services.async_remove(DOMAIN, service)
