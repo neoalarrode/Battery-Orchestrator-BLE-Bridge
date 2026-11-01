@@ -68,6 +68,14 @@ STREAM_STATE_FIELDS = [
 class EcoflowBrandAdapter:
     def __init__(self):
         self._devices: dict[str, eflib.DeviceBase] = {}
+        # Un candado por equipo para conectar. BUG REAL (1-nov, STREAM Ultra X):
+        # dos llamadas a la vez (Battery Orchestrator lee cada 10 s, su ciclo
+        # manda ordenes cada 30 s) y la segunda veia la conexion de la primera
+        # A MEDIO AUTENTICAR, la tomaba por rota y la cortaba ("conexion a
+        # medias -- forzando desconexion"): 29 cortes provocados en 12 min, y las
+        # ordenes que iban por ella se perdian o llegaban decenas de segundos
+        # tarde.
+        self._connect_locks: dict[str, asyncio.Lock] = {}
 
     async def discover(self, hass: HomeAssistant) -> list[dict]:
         found: dict[str, dict] = {}
@@ -86,6 +94,11 @@ class EcoflowBrandAdapter:
         return list(found.values())
 
     async def ensure_connected(self, hass: HomeAssistant, address: str, credentials: dict) -> eflib.DeviceBase:
+        lock = self._connect_locks.setdefault(address, asyncio.Lock())
+        async with lock:
+            return await self._ensure_connected_locked(hass, address, credentials)
+
+    async def _ensure_connected_locked(self, hass: HomeAssistant, address: str, credentials: dict) -> eflib.DeviceBase:
         user_id = (credentials or {}).get("user_id")
         device = self._devices.get(address)
         if device is not None and device.is_connected:

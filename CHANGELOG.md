@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+Un candado por equipo al conectar: dos llamadas a la vez ya no se cortan entre ellas. Antes la segunda veia la conexion de la primera a medio autenticar, la tomaba por rota y la desconectaba (29 cortes provocados en 12 min con una STREAM Ultra X), y las ordenes que iban por ella se perdian o llegaban decenas de segundos tarde.
+
 ## 0.5.0
 
 Modo semiautomatico de las STREAM, para que Battery Orchestrator haga de contador de cada bateria (un grupo por bateria, cada una con sus 1200 W):
