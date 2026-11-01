@@ -34,6 +34,13 @@ STREAM_STATE_FIELDS = [
     "battery_level_main",
     "battery_power",
     "grid_power",
+    # Potencia que sale por los enchufes Schuko de ESTA unidad
+    # (`pow_get_schuko1/2`, mapeados por eflib como `ac_power_1/2` segun el
+    # modelo: Max solo el 1, Pro/Ultra/AC Pro los dos). `grid_power` es lo
+    # que la unidad toma de red, enchufes incluidos: Battery Orchestrator los
+    # resta para saber cuanto entra de verdad en la bateria.
+    "ac_power_1",
+    "ac_power_2",
     "charging_task_enabled",
     "charging_grid_power_limit",
     "charging_grid_target_soc",

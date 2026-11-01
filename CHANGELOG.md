@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2
+
+`get_state` de la familia STREAM devuelve tambien `ac_power_1`/`ac_power_2`: la potencia que sale por los enchufes Schuko de cada unidad (ya leida por eflib, `pow_get_schuko1/2`; no se toca el codigo vendorizado). Battery Orchestrator la necesita para no contar como carga de bateria lo que la unidad toma de red para alimentar sus enchufes.
+
 ## 0.4.0
 Actualizado `eflib/` (vendorizado desde `rabits/ha-ef-ble`) de la version que traiamos a v1.1.1 -- a peticion expresa del usuario, tras el ultimo release de ese proyecto. Cambio real relevante: reescritura completa del flujo de autenticacion BLE como una secuencia de estados (`_auth_stage`, listener `on_session_key_derived`) y lectura de cada respuesta de auth desde un unico buzon de notificaciones en vez de competir por "el siguiente frame que llegue" (PRs #464/#466/#489 de ha-ef-ble) -- mejoras directas de fiabilidad de la conexion, justo el area donde mas se nota en real. Tambien trae los prefijos de serie nuevos para Delta 3 1500/Classic.
 
